@@ -1,0 +1,19 @@
+{
+  "parse-context": {
+    "timeout-limits": { "progressTimeoutMillis": 60000 },
+    "commons-digester-factory": {
+      "digests": [ { "algorithm": "SHA256" } ],
+      "skipContainerDocumentDigest": false
+    }
+  },
+  "grpc": { "maxInboundMessageBytes": 104857600 },
+  "pipes": {
+    "javaPath": "JAVA_PATH",
+    "numClients": 2,
+    "forkedJvmArgs": [ "-Xmx1g", "-XX:ParallelGCThreads=2" ],
+    "emitStrategy": { "type": "PASSBACK_ALL" },
+    "staleFetcherTimeoutSeconds": 600,
+    "staleFetcherDelaySeconds": 60
+  },
+  "plugin-roots": "PLUGIN_ROOTS"
+}

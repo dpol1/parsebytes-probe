@@ -1,0 +1,25 @@
+# StormCrawler config for the probe. crawler-default.yaml from the stormcrawler-core jar is
+# loaded first; only the keys below override it.
+config:
+  http.agent.name: "parsebytes-probe"
+  http.agent.version: "1.0"
+  http.agent.description: "ParseBytes probe, local run against a fixture server"
+  http.agent.url: "http://localhost/"
+  http.agent.email: "test@localhost"
+
+  urlfrontier.host: "localhost"
+  urlfrontier.port: 7072
+  partition.url.mode: "byHost"
+
+  # Everything is on one host, so tuples wait in the fetcher's queue behind the politeness
+  # delay. With Storm's default 30 s timeout the spout would replay the ones still waiting,
+  # the fixture server would see a second GET, and "single acquisition" would fail for the
+  # wrong reason. The frontier's lease on a handed-out URL follows this value too (the spout
+  # defaults urlfrontier.delay.requestable to it), which is what we want: one hand-out per run.
+  topology.max.spout.pending: 10
+  topology.message.timeout.secs: 300
+
+  # Where the probe sends the bytes and where it writes its lines. Change parsebytes.target to
+  # try another ParseBytes implementation, then run with SKIP_TIKA=1.
+  # parsebytes.target: "localhost:50052"
+  # parsebytes.results: "out/results.jsonl"

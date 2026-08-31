@@ -1,0 +1,14 @@
+ParseBytes probe
+Copyright 2026 Davide Polato
+
+This repository redistributes, under the Apache License 2.0:
+
+- proto/org/apache/tika/grpc/v2/document.proto and tika_v2.proto, copied verbatim from the
+  TIKA-4795-parseBytes branch of https://github.com/ai-pipestream/tika (a fork of Apache Tika),
+  and the Java classes under src/main/java/org/apache/tika/grpc/v2 generated from them;
+- testserver/docs/testPDF.pdf, testPDF_childAttachments.pdf and testPDF_protected.pdf, test
+  documents from Apache Tika (tika-parser-pdf-module/src/test/resources/test-documents);
+- proto/google/protobuf/timestamp.proto, from Protocol Buffers (BSD-3-Clause).
+
+Apache Tika, Apache StormCrawler and Apache Storm are developed at The Apache Software
+Foundation (https://www.apache.org/). URLFrontier is a crawler-commons project.

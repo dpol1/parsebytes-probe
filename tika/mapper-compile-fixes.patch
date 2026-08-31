@@ -1,0 +1,41 @@
+diff --git a/tika-grpc-mapper/src/main/java/org/apache/tika/grpc/mapper/DocumentBuilder.java b/tika-grpc-mapper/src/main/java/org/apache/tika/grpc/mapper/DocumentBuilder.java
+index cbe7fce089..d8bb72f3d0 100644
+--- a/tika-grpc-mapper/src/main/java/org/apache/tika/grpc/mapper/DocumentBuilder.java
++++ b/tika-grpc-mapper/src/main/java/org/apache/tika/grpc/mapper/DocumentBuilder.java
+@@ -21,6 +21,7 @@ import java.util.HashSet;
+ import java.util.Set;
+ 
+ import org.apache.tika.Tika;
++import org.apache.tika.digest.DigestDef;
+ import org.apache.tika.grpc.mapper.transform.DocumentTransformers;
+ import org.apache.tika.grpc.v2.Document;
+ import org.apache.tika.grpc.v2.ParseStatus;
+@@ -40,8 +41,8 @@ public final class DocumentBuilder {
+     // The metadata key DigestDef.metadataKey() produces for SHA-256 with the default hex
+     // encoding; the parse pipeline records the source digest there when a digester is
+     // configured.
+-    private static final String SHA256_DIGEST_KEY = TikaCoreProperties.TIKA_META_PREFIX
+-            + "digest" + TikaCoreProperties.NAMESPACE_PREFIX_DELIMITER + "SHA256";
++    private static final String SHA256_DIGEST_KEY =
++            new DigestDef(DigestDef.Algorithm.SHA256, DigestDef.Encoding.HEX).metadataKey();
+ 
+     private DocumentBuilder() {
+     }
+@@ -87,7 +88,7 @@ public final class DocumentBuilder {
+         String contentType = primary.get(Metadata.CONTENT_TYPE);
+         if (contentType != null && !contentType.isBlank()) {
+             document.setContentType(contentType.trim());
+-            consumed.add(Metadata.CONTENT_TYPE);
++            consumed.add(Metadata.CONTENT_TYPE.getName());
+         }
+ 
+         Instant now = Instant.now();
+@@ -106,7 +107,7 @@ public final class DocumentBuilder {
+         if (contentLength != null && !contentLength.isBlank()) {
+             try {
+                 origin.setByteSize(Long.parseLong(contentLength.trim()));
+-                consumed.add(Metadata.CONTENT_LENGTH);
++                consumed.add(Metadata.CONTENT_LENGTH.getName());
+             } catch (NumberFormatException ignored) {
+                 // leave unconsumed; falls through to the tagged tail
+             }
