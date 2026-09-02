@@ -75,7 +75,10 @@ public class ParseBytesBolt extends BaseRichBolt {
         try {
             ParseBytesRequest request =
                     ParseBytesRequest.newBuilder()
-                            .setCorrelationId(url)
+                            // Deliberately not the URL itself: verify.py must be able to
+                            // tell an echoed correlation id from an id copied out of the
+                            // provenance below.
+                            .setCorrelationId("crawl:" + url)
                             .setContent(ByteString.copyFrom(content))
                             .setResourceName(resourceName(url))
                             // Provenance only. The contract says the server never dereferences
@@ -92,8 +95,11 @@ public class ParseBytesBolt extends BaseRichBolt {
             Document doc = reply.getDocument();
             line.put("correlation_id", request.getCorrelationId())
                     .put("doc_id", doc.getId())
+                    .put("reply_correlation_id", reply.getCorrelationId())
                     .put("client_sha256", sha256(content))
                     .put("origin_sha256", doc.getOrigin().getSha256())
+                    .put("origin_byte_size", doc.getOrigin().getByteSize())
+                    .put("origin_source_uri", doc.getOrigin().getSourceUri())
                     .put("content_type", doc.getContentType())
                     .put("title", doc.getMetadata().getTitle())
                     .put("authors", String.join(";", doc.getMetadata().getAuthorsList()))
@@ -107,7 +113,10 @@ public class ParseBytesBolt extends BaseRichBolt {
                     .put("extra_fields", doc.getExtraCount())
                     // Wire size of the typed reply, to compare with the input bytes.
                     .put("document_bytes", doc.getSerializedSize())
-                    .put("truncated", request.getTruncated());
+                    // What the crawler said and what came back in origin: verify.py checks
+                    // they agree, and that /big is the one page flagged.
+                    .put("truncated_sent", request.getTruncated())
+                    .put("truncated", doc.getOrigin().getTruncated());
         } catch (StatusRuntimeException e) {
             line.put("error", e.getStatus().toString());
         } catch (Exception e) {

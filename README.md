@@ -2,13 +2,14 @@
 
 ParseBytes probe is a small end-to-end check for [Apache StormCrawler](https://stormcrawler.apache.org/)
 talking to [Apache Tika](https://tika.apache.org/) over gRPC. A local crawl fetches
-fourteen URLs and a bolt hands the exact fetched bytes to `TikaV2.ParseBytes`, the
+fifteen URLs and a bolt hands the exact fetched bytes to `TikaV2.ParseBytes`, the
 parse-only call from the [`TIKA-4795-parseBytes`](https://github.com/ai-pipestream/tika/tree/TIKA-4795-parseBytes)
 branch of the [ai-pipestream/tika](https://github.com/ai-pipestream/tika) fork
 ([TIKA-4795](https://issues.apache.org/jira/browse/TIKA-4795); apache/tika does not ship it
 yet). An independent verifier, [`verify.py`](verify.py), re-derives every claim from the
-outputs: same sha256 on the crawler's bytes and in Tika's reply, exactly one GET per URL in
-the fixture server's log, and Tika's own test PDFs typed the way Tika's test suite expects.
+outputs: same sha256 on the crawler's bytes and in Tika's reply, byte count and truncation
+flag echoed back in `origin`, exactly one GET per URL in the fixture server's log, and Tika's
+own test PDFs typed the way Tika's test suite expects.
 Anything missing, duplicated or failed turns the run red.
 
 The bolt depends only on the classes generated from the two protos, plus grpc and protobuf,
@@ -23,7 +24,9 @@ fetcher inside Tika.
 
 ## Quickstart
 
-You need Java 25 (the pom targets 17, but that is untested), Maven, Docker and python3.
+You need Java 25 (the pom targets 17, but that is untested), Maven, Docker, python3 and DNS:
+the fixture host `parsebytes.127.0.0.1.nip.io` only resolves through nip.io. Offline, put a
+name for 127.0.0.1 in `/etc/hosts` and pass it as `FIXTURE_HOST`.
 
 Build tika-grpc at the commit the protos were copied from. That commit does not compile
 against the tika-core it merged in, so apply the three-hunk patch first (two `Property`
@@ -51,14 +54,18 @@ cd ../parsebytes-probe
 ./run.sh
 ```
 
-Two minutes of crawl, then the verifier; exit 0 means all twelve checks passed. Everything
+Two minutes of crawl, then the verifier; exit 0 means all fifteen checks passed. Everything
 a run produces (results, manifest with server, proto and fixture hashes, logs) lands in
 `out/`, which git ignores. On exit the script kills what it started, its own URLFrontier
 container included. `TIKA_WT=path` points at a Tika checkout elsewhere; `RUN_MINUTES=1`
 is enough on a fast machine.
 
-The fixtures: nine generated HTML pages the crawl discovers on its own, plus five PDF URLs
-backed by four distinct files.
+The fixtures: nine generated HTML pages, three seeded and six the crawl discovers on its
+own; one generated 4 MiB page that the crawl's `http.content.limit` (3 MiB) makes FetcherBolt
+cut, so the truncation flag travels as true for one URL and false for the rest; and five PDF
+URLs backed by four distinct files. The server config pins `pipes.maxInlineBytes` at 1 MiB, so
+the 2.3 MB PDF and the cut page reach the parser through ParseBytes' spool file while everything
+smaller travels inline in the worker message: one run covers both lanes.
 Three come verbatim from Tika's test corpus, `testPDF.pdf` (whose expected metadata is
 asserted by Tika's `PDFParserTest`, not by me), the 2.3 MB `testPDF_childAttachments.pdf`
 and the owner-password `testPDF_protected.pdf`; `testPDF.pdf` is also served a second time
@@ -93,10 +100,17 @@ echo '  parsebytes.target: "host:port"' >> crawler-conf.yaml
 SKIP_TIKA=1 ./run.sh
 ```
 
-The request carries the bytes, a correlation id (the URL, echoed back as `Document.id`),
-the last path segment as a detection hint, the URL as provenance that must never be
-dereferenced, and StormCrawler's truncation flag. Nothing else. If your server needs more
-than that to do its job, I want to hear about it.
+The request carries the bytes, a correlation id (`crawl:` plus the URL, echoed back as
+`Document.id` and as `ParseBytesReply.correlation_id`; not the bare URL, so an id copied out
+of the provenance would not pass), the last path segment as a detection hint, the URL as
+provenance that must never be dereferenced, and StormCrawler's truncation flag. Nothing else.
+If your server needs more than that to do its job, I want to hear about it.
+
+One caveat. The fixture server binds 127.0.0.1, so if the server you point at runs on another
+machine, the single-acquisition check proves nothing on its own: a re-fetch that cannot
+connect is never logged. Give the fixture a name that resolves to this machine from there and
+bind it wide, `FIXTURE_HOST=myhost.lan FIXTURE_BIND=0.0.0.0`, and the check means what it says
+again.
 
 ## What this is not
 

@@ -19,6 +19,11 @@ config:
   topology.max.spout.pending: 10
   topology.message.timeout.secs: 300
 
+  # /big is served larger than this, every other fixture is smaller: FetcherBolt cuts that
+  # one page and flags protocol.http.trimmed. The bolt forwards the flag, the server echoes
+  # it as origin.truncated, verify.py checks the round trip. Bytes.
+  http.content.limit: 3145728
+
   # Where the probe sends the bytes and where it writes its lines. Change parsebytes.target to
   # try another ParseBytes implementation, then run with SKIP_TIKA=1.
   # parsebytes.target: "localhost:50052"

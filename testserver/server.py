@@ -16,8 +16,10 @@ Routes (any host name; they all resolve to this process):
     /docs/<file>     a file from testserver/docs/ with its real content type
     /octet/blob      the bytes of docs/testPDF.pdf with no extension and declared as
                      application/octet-stream: neither header nor name says PDF
+    /big             a 4 MiB generated page, above the crawl's http.content.limit, so
+                     FetcherBolt cuts it and sets the truncation flag
 
-Usage: server.py [access.log] [port]
+Usage: server.py [access.log] [port] [bind address]
 """
 
 import os
@@ -27,11 +29,15 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 LOG_PATH = sys.argv[1] if len(sys.argv) > 1 else "access.log"
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 8080
+BIND = sys.argv[3] if len(sys.argv) > 3 else "127.0.0.1"
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS_DIR = os.path.join(HERE, "docs")
 with open(os.path.join(HERE, "fixture.pdf"), "rb") as fh:
     FIXTURE_PDF = fh.read()
 logfile = open(LOG_PATH, "a", buffering=1)
+# Deterministic, so its hash is stable across runs; the crawl only ever sees its first
+# http.content.limit bytes.
+BIG_HTML = b"<html><body><h1>/big</h1>" + b"0123456789abcdef" * (4 * 1024 * 1024 // 16) + b"</body></html>"
 
 
 def page_html(path):
@@ -63,6 +69,8 @@ class Handler(BaseHTTPRequestHandler):
                 body, ctype = doc_bytes(self.path), "application/pdf"
             elif self.path == "/octet/blob":
                 body, ctype = doc_bytes("testPDF.pdf"), "application/octet-stream"
+            elif self.path == "/big":
+                body = BIG_HTML
             else:
                 body = page_html(self.path)
         except FileNotFoundError:
@@ -78,4 +86,4 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     print(f"fixture server on :{PORT}, logging to {LOG_PATH}", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    ThreadingHTTPServer((BIND, PORT), Handler).serve_forever()

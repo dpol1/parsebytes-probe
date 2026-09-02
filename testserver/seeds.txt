@@ -6,3 +6,4 @@ http://parsebytes.127.0.0.1.nip.io:8099/docs/testPDF.pdf
 http://parsebytes.127.0.0.1.nip.io:8099/octet/blob
 http://parsebytes.127.0.0.1.nip.io:8099/docs/testPDF_childAttachments.pdf
 http://parsebytes.127.0.0.1.nip.io:8099/docs/testPDF_protected.pdf
+http://parsebytes.127.0.0.1.nip.io:8099/big

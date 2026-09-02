@@ -2,7 +2,7 @@
 """The checks. Reads the lines ParseBytesBolt wrote and the fixture server's access log, prints
 one PASS/FAIL line per check, exits 1 if any failed.
 
-    python3 verify.py [out/results.jsonl] [out/access.log]
+    python3 verify.py [out/results.jsonl] [out/access.log] [seeds file]
 
 The verifier knows the exact set of URLs a run must produce: the seeds plus the pages the
 seeds link to. A missing, duplicated or unexpected URL fails the run, and so does any result
@@ -14,13 +14,20 @@ no second acquisition" could be false; the comments say which.
 import hashlib
 import json
 import os
+import re
 import sys
 from collections import Counter
 from urllib.parse import urlparse
 
 RESULTS = sys.argv[1] if len(sys.argv) > 1 else "out/results.jsonl"
 LOG = sys.argv[2] if len(sys.argv) > 2 else "out/access.log"
-SEEDS = "testserver/seeds.txt"
+SEEDS = sys.argv[3] if len(sys.argv) > 3 else "testserver/seeds.txt"
+# The one value crawler-conf.yaml and this file must agree on.
+with open("crawler-conf.yaml") as f:
+    limit = re.search(r"^\s*http\.content\.limit:\s*(\d+)", f.read(), re.M)
+if not limit:
+    sys.exit("crawler-conf.yaml: http.content.limit is missing, and the truncation check needs it")
+CONTENT_LIMIT = int(limit.group(1))
 
 failures = []
 
@@ -76,12 +83,35 @@ not_clean = [(path_of(r["url"]), r.get("pipes_status"), r.get("errors")) for r i
              if r.get("pipes_status") != "PARSE_SUCCESS" or r.get("errors")]
 check("all parse success", bool(docs) and not not_clean, not_clean or f"{len(docs)}/{len(docs)} PARSE_SUCCESS, no parser errors")
 
-# The server echoes correlation_id as Document.id. If this fails, either the reply is not for
-# our request or the server minted its own id, which breaks every caller keeping a map.
+# The server echoes correlation_id twice: as ParseBytesReply.correlation_id and as Document.id,
+# the key the caller supplied (not a content identity: that is origin.sha256). If this fails,
+# either the reply is not for our request or the server minted its own id, which breaks every
+# caller keeping a map. The bolt sends "crawl:" + URL, never the bare URL, so an id copied out
+# of source_uri fails here instead of passing by coincidence.
 check(
     "id echo",
-    bool(docs) and all(r["doc_id"] == r["correlation_id"] for r in docs),
-    [(path_of(r["url"]), r["doc_id"]) for r in docs if r["doc_id"] != r["correlation_id"]] or f"{len(docs)}/{len(docs)}",
+    bool(docs) and all(r["doc_id"] == r["correlation_id"] == r.get("reply_correlation_id") != r["url"]
+                       for r in docs),
+    [(path_of(r["url"]), r["doc_id"], r.get("reply_correlation_id")) for r in docs
+     if not (r["doc_id"] == r["correlation_id"] == r.get("reply_correlation_id") != r["url"])]
+    or f"{len(docs)}/{len(docs)}, none equal to the URL",
+)
+
+# The URL itself travels as source_uri and comes back in origin untouched.
+check(
+    "provenance echo",
+    bool(docs) and all(r.get("origin_source_uri") == r["url"] for r in docs),
+    [(path_of(r["url"]), r.get("origin_source_uri")) for r in docs if r.get("origin_source_uri") != r["url"]]
+    or f"{len(docs)}/{len(docs)} origin.source_uri == url",
+)
+
+# origin.byte_size must be the size of what we sent, not of anything the server spooled or
+# re-read.
+check(
+    "byte size echo",
+    bool(docs) and all(r.get("origin_byte_size") == r["bytes"] for r in docs),
+    [(path_of(r["url"]), r["bytes"], r.get("origin_byte_size")) for r in docs
+     if r.get("origin_byte_size") != r["bytes"]] or f"{len(docs)}/{len(docs)} origin.byte_size == bytes sent",
 )
 
 # Client and server hashed the same bytes independently. Non-empty matters: with the digester
@@ -174,6 +204,19 @@ check("embedded container parsed", bool(child) and child["content_type"].startsw
 prot = by_path.get("/docs/testPDF_protected.pdf")
 check("owner-password pdf still parsed", bool(prot) and prot["content_type"].startswith("application/pdf") and bool(prot["title"]),
       {k: prot.get(k) for k in ("pipes_status", "title")} if prot else "no result")
+
+# The one page FetcherBolt cut: exactly http.content.limit bytes arrived, the bolt sent
+# truncated=true, the server echoed it in origin. Every other page went through untouched and
+# says so on both sides. Without a real cut, the flag would only ever be tested as false.
+big = by_path.get("/big")
+others_flagged = [path_of(r["url"]) for r in docs if r is not big and (r.get("truncated") or r.get("truncated_sent"))]
+check(
+    "truncation round trip",
+    bool(big) and big.get("truncated_sent") and big.get("truncated") and big["bytes"] == CONTENT_LIMIT
+    and not others_flagged,
+    ({k: big.get(k) for k in ("bytes", "truncated_sent", "truncated")} if big else "no result")
+    if not others_flagged else f"flagged without a cut: {others_flagged}",
+)
 
 fixture = by_path.get("/fixture.pdf")
 check(

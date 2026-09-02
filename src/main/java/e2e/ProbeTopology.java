@@ -36,18 +36,19 @@ import org.yaml.snakeyaml.Yaml;
  * the probe. The status updater sends discovered links back to the frontier. Runs in a
  * LocalCluster for a fixed number of minutes, then exits.
  *
- * <p>Usage: {@code ProbeTopology [minutes] [seeds file]}
+ * <p>Usage: {@code ProbeTopology [minutes] [seeds file] [crawler conf]}
  */
 public class ProbeTopology {
 
     public static void main(String[] args) throws Exception {
         int runMinutes = args.length > 0 ? Integer.parseInt(args[0]) : 2;
         Path seeds = Path.of(args.length > 1 ? args[1] : "testserver/seeds.txt");
+        String crawlerConf = args.length > 2 ? args[2] : "crawler-conf.yaml";
 
         Config conf = new Config();
         // StormCrawler's defaults first (from the stormcrawler-core jar), then our overrides.
         conf.putAll(loadConfigSection("/crawler-default.yaml", true));
-        conf.putAll(loadConfigSection("crawler-conf.yaml", false));
+        conf.putAll(loadConfigSection(crawlerConf, false));
 
         injectSeeds(Files.readAllLines(seeds));
 
