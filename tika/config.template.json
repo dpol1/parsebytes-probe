@@ -10,10 +10,9 @@
   "pipes": {
     "javaPath": "JAVA_PATH",
     "numClients": 2,
+    "maxInlineBytes": 1048576,
     "forkedJvmArgs": [ "-Xmx1g", "-XX:ParallelGCThreads=2" ],
-    "emitStrategy": { "type": "PASSBACK_ALL" },
-    "staleFetcherTimeoutSeconds": 600,
-    "staleFetcherDelaySeconds": 60
+    "emitStrategy": { "type": "PASSBACK_ALL" }
   },
   "plugin-roots": "PLUGIN_ROOTS"
 }

@@ -49,6 +49,9 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * envelope
+   * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+   * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+   * identity; when available, origin.sha256 identifies the bytes parsed.
    * </pre>
    *
    * <code>string id = 1;</code>
@@ -70,6 +73,9 @@ private static final long serialVersionUID = 0L;
   /**
    * <pre>
    * envelope
+   * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+   * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+   * identity; when available, origin.sha256 identifies the bytes parsed.
    * </pre>
    *
    * <code>string id = 1;</code>
@@ -900,6 +906,9 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * envelope
+     * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+     * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+     * identity; when available, origin.sha256 identifies the bytes parsed.
      * </pre>
      *
      * <code>string id = 1;</code>
@@ -920,6 +929,9 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * envelope
+     * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+     * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+     * identity; when available, origin.sha256 identifies the bytes parsed.
      * </pre>
      *
      * <code>string id = 1;</code>
@@ -941,6 +953,9 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * envelope
+     * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+     * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+     * identity; when available, origin.sha256 identifies the bytes parsed.
      * </pre>
      *
      * <code>string id = 1;</code>
@@ -958,6 +973,9 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * envelope
+     * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+     * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+     * identity; when available, origin.sha256 identifies the bytes parsed.
      * </pre>
      *
      * <code>string id = 1;</code>
@@ -972,6 +990,9 @@ private static final long serialVersionUID = 0L;
     /**
      * <pre>
      * envelope
+     * Opaque caller-supplied work key: fetch_key on FetchAndParse, correlation_id
+     * on ParseBytes. Echoed verbatim and never interpreted. It is not content
+     * identity; when available, origin.sha256 identifies the bytes parsed.
      * </pre>
      *
      * <code>string id = 1;</code>
