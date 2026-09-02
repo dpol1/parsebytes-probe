@@ -1,14 +1,17 @@
-PASS  exact url set: 14 results for 14 expected URLs
+PASS  exact url set: 15 results for 15 expected URLs
 PASS  no rpc errors: none
-PASS  all parse success: 14/14 PARSE_SUCCESS, no parser errors
-PASS  id echo: 14/14
-PASS  digest parity: 14/14 sha256 equal, non-empty
-PASS  single acquisition: 1 GET each for 14 URLs
+PASS  all parse success: 15/15 PARSE_SUCCESS, no parser errors
+PASS  id echo: 15/15, none equal to the URL
+PASS  provenance echo: 15/15 origin.source_uri == url
+PASS  byte size echo: 15/15 origin.byte_size == bytes sent
+PASS  digest parity: 15/15 sha256 equal, non-empty
+PASS  single acquisition: 1 GET each for 15 URLs
 PASS  bytes on disk == crawler bytes: 5 served files identical end to end
 PASS  real pdf typed metadata: {'content_type': 'application/pdf', 'title': 'Apache Tika - Apache Tika', 'authors': 'Bertrand Delacrétaz', 'created': '2007-09-15T09:02:31Z'}
 PASS  detection from bytes alone: application/pdf
 PASS  embedded container parsed: {'content_type': 'application/pdf', 'extra_fields': 60, 'parsers_used': 'org.apache.tika.parser.DefaultParser,org.apache.tika.parser.pdf.PDFParser,org.apache.tika.parser.csv.TextAndCSVParser,org.apache.tika.parser.microsoft.OfficeParser'}
 PASS  owner-password pdf still parsed: {'pipes_status': 'PARSE_SUCCESS', 'title': 'Rethinking the Financial Network, Speech by Andrew G Haldane, Executive Director, Financial Stability delivered at the Financial Student Association, Amsterdam on 28 April 2009'}
+PASS  truncation round trip: {'bytes': 3145728, 'truncated_sent': True, 'truncated': True}
 PASS  hand-written pdf typed metadata: {'content_type': 'application/pdf', 'title': 'ParseBytes fixture'}
 
 ALL CHECKS PASSED

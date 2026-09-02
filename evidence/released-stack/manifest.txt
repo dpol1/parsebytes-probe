@@ -1,17 +1,20 @@
-probe_sha=915debd07b4374e109c1bfa6238c5a4cc2ef4e14
-tika_server_sha=3cfa638409f16f8e89df5d04a31c72892d25cb32
-tika_server_uncommitted_patch_sha256=de6ae867b36308c4cef316a1ff323cc7e06137d18844140019938ba2872511e7
-tika_version_reported=Apache Tika 4.0.0-SNAPSHOT
+probe_sha=a4b61fce35b03bb222ad47c3d5bae3395bcf116a
+tika_server_sha=a060ac5d35483b9f5f684b6c356332474494e2f8
+tika_server_uncommitted_patch_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+tika_port=50052
+tika_version_reported=Apache Tika 4.1.0-SNAPSHOT
 stormcrawler_version=3.7.0
 storm_version=2.8.9
 urlfrontier_version=2.5
+fixture_host=parsebytes.127.0.0.1.nip.io fixture_bind=127.0.0.1
 protoc=3.25.8 protoc-gen-grpc-java=1.76.0 (runtime: protobuf-java 3.25.8, grpc 1.76.0)
-sha256 dc4498748fb017f4aa7e5a68cd04e5fabccd36980110001f9df0215a0a8c09d4  proto/org/apache/tika/grpc/v2/document.proto
+sha256 8a233ef9aa03acee1d6a19ad7db26b8068416d1268b59add4592f6fe3cdb9449  proto/org/apache/tika/grpc/v2/document.proto
 sha256 ad0cfb978d9fb393ac18724be8aacac30f8c4682f9d755a97f2fc02904976724  proto/org/apache/tika/grpc/v2/tika_v2.proto
-sha256 5b65f5a5a55f9b8c8189686a70e3f9e5cd08c74e70f76a1c61273954ffa47db4  testserver/server.py
+sha256 991be91bc0bc09126cbf43ed37358913f48ec90323c2baf0daf41026e251ae01  tika/config.template.json
+sha256 49543c0c5b559ce0ce068e8b1dd3507f5a3b162f3b2767b347770b1f8a25c9b3  testserver/server.py
 sha256 e3dab9aca375c152075cfc3ce764f60ec74823a51d8bf7cf134f515d0365851d  testserver/fixture.pdf
 sha256 9396d203b78cc367d8879c867f45de0f8ea16e15ecd5831e570240aba081083e  testserver/docs/testPDF_childAttachments.pdf
 sha256 8035bc3f748d8b97b8a9978bd812197bf40cf2b294a7e9b30e39d7167ddc720e  testserver/docs/testPDF.pdf
 sha256 ff4f3a11b2ae08e8a38cd026317a4aac84cd489ebc5a4015f51503c99711f729  testserver/docs/testPDF_protected.pdf
-sha256 96e7288bb96e2bbce7fc5c58f9727287b098edc2b59d3d7d0f4b0e87629597d2  testserver/seeds.txt
+sha256 a5465bad8fb1e16bddf22fb29d1efb0bcc726b4e363210e1726a33655bd94180  testserver/seeds.txt
 java=openjdk version "25.0.4" 2026-07-21

@@ -1,13 +1,17 @@
 ParseBytes probe
 Copyright 2026 Davide Polato
 
-This repository redistributes, under the Apache License 2.0:
+This repository redistributes:
 
 - proto/org/apache/tika/grpc/v2/document.proto and tika_v2.proto, copied verbatim from the
-  TIKA-4795-parseBytes branch of https://github.com/ai-pipestream/tika (a fork of Apache Tika),
-  and the Java classes under src/main/java/org/apache/tika/grpc/v2 generated from them;
-- testserver/docs/testPDF.pdf, testPDF_childAttachments.pdf and testPDF_protected.pdf, test
-  documents from Apache Tika (tika-parser-pdf-module/src/test/resources/test-documents);
+  TIKA-4795 branch of https://github.com/ai-pipestream/tika (a fork of Apache Tika, Apache
+  License 2.0), and the Java classes under src/main/java/org/apache/tika/grpc/v2 generated
+  from them;
+- testserver/docs/testPDF.pdf, testPDF_childAttachments.pdf and testPDF_protected.pdf, as
+  found in Apache Tika's test corpus (tika-parser-pdf-module/src/test/resources/test-documents).
+  Their own terms apply: testPDF_childAttachments.pdf is IRS Publication 15 (a US government
+  work) and testPDF_protected.pdf is a Bank of England speech that reached Tika through
+  PDFBOX-858;
 - proto/google/protobuf/timestamp.proto, from Protocol Buffers (BSD-3-Clause).
 
 Apache Tika, Apache StormCrawler and Apache Storm are developed at The Apache Software

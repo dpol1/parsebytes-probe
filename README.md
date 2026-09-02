@@ -4,9 +4,10 @@ ParseBytes probe is a small end-to-end check for [Apache StormCrawler](https://s
 talking to [Apache Tika](https://tika.apache.org/) over gRPC. A local crawl fetches
 fifteen URLs and a bolt hands the exact fetched bytes to `TikaV2.ParseBytes`, the
 parse-only call from the [`TIKA-4795-parseBytes`](https://github.com/ai-pipestream/tika/tree/TIKA-4795-parseBytes)
-branch of the [ai-pipestream/tika](https://github.com/ai-pipestream/tika) fork
-([TIKA-4795](https://issues.apache.org/jira/browse/TIKA-4795); apache/tika does not ship it
-yet). An independent verifier, [`verify.py`](verify.py), re-derives every claim from the
+branch of the [ai-pipestream/tika](https://github.com/ai-pipestream/tika) fork, Tika main of
+2026-09-01 plus the typed Document of [TIKA-4766](https://issues.apache.org/jira/browse/TIKA-4766)
+and ParseBytes ([TIKA-4795](https://issues.apache.org/jira/browse/TIKA-4795); apache/tika does
+not ship either yet). An independent verifier, [`verify.py`](verify.py), re-derives every claim from the
 outputs: same sha256 on the crawler's bytes and in Tika's reply, byte count and truncation
 flag echoed back in `origin`, exactly one GET per URL in the fixture server's log, and Tika's
 own test PDFs typed the way Tika's test suite expects.
@@ -28,25 +29,23 @@ You need Java 25 (the pom targets 17, but that is untested), Maven, Docker, pyth
 the fixture host `parsebytes.127.0.0.1.nip.io` only resolves through nip.io. Offline, put a
 name for 127.0.0.1 in `/etc/hosts` and pass it as `FIXTURE_HOST`.
 
-Build tika-grpc at the commit the protos were copied from. That commit does not compile
-against the tika-core it merged in, so apply the three-hunk patch first (two `Property`
-compile fixes and the digest key derived from `DigestDef`, without which `origin.sha256`
-comes back empty). Clone it next to this repository: the run script's default
-`TIKA_WT` is the sibling folder `../tika-4795-demo`:
+Build tika-grpc at the commit the protos were copied from, `a060ac5d35483b9f5f684b6c356332474494e2f8`.
+Clone it next to this repository: the run script's default `TIKA_WT` is the sibling folder
+`../tika-4795-demo`:
 
 ```sh
 git clone https://github.com/dpol1/parsebytes-probe.git
 git clone https://github.com/ai-pipestream/tika.git tika-4795-demo
 cd tika-4795-demo
-git checkout 3cfa638409f16f8e89df5d04a31c72892d25cb32
-git apply ../parsebytes-probe/tika/mapper-compile-fixes.patch
+git checkout a060ac5d35483b9f5f684b6c356332474494e2f8
 ./mvnw -q clean -pl tika-grpc -am -DskipTests -Dmaven.javadoc.skip=true -Drat.skip=true \
   -Dcheckstyle.skip=true -Dforbiddenapis.skip=true -Dspotless.check.skip=true \
   -Dmdep.includeScope=runtime -Dmdep.outputFile="$PWD/tika-grpc/target/cp.txt" \
   package dependency:build-classpath
 ```
 
-Nothing is installed to `~/.m2`; the server runs from the reactor jars listed in `cp.txt`.
+Nothing from that build is installed to `~/.m2` (its dependencies are still resolved and
+cached there); the server runs from the reactor jars listed in `cp.txt`.
 Then:
 
 ```sh
@@ -58,7 +57,9 @@ Two minutes of crawl, then the verifier; exit 0 means all fifteen checks passed.
 a run produces (results, manifest with server, proto and fixture hashes, logs) lands in
 `out/`, which git ignores. On exit the script kills what it started, its own URLFrontier
 container included. `TIKA_WT=path` points at a Tika checkout elsewhere; `RUN_MINUTES=1`
-is enough on a fast machine.
+is enough on a fast machine; `TIKA_PORT` picks the server port, and the script moves off a
+taken one by itself (50052 sits inside Linux's ephemeral range, any outbound connection may
+hold it); `ARCHIVE=1` refuses to run from a dirty checkout, for runs kept as evidence.
 
 The fixtures: nine generated HTML pages, three seeded and six the crawl discovers on its
 own; one generated 4 MiB page that the crawl's `http.content.limit` (3 MiB) makes FetcherBolt
@@ -79,19 +80,20 @@ From the archived run in [`evidence/released-stack/`](evidence/released-stack/):
 StormCrawler 3.7.0, Storm 2.8.9, one laptop, nothing tuned. `elapsed` wraps the blocking
 call in the bolt: wire, forked parse and mapping to the typed Document.
 
-| URL | Bytes | Detected | Elapsed |
-| --- | ---: | --- | ---: |
-| `/docs/testPDF.pdf` | 34,824 | `application/pdf` | 7,375 ms |
-| `/docs/testPDF_childAttachments.pdf` | 2,318,262 | `application/pdf` | 4,051 ms |
-| `/docs/testPDF_protected.pdf` | 506,064 | `application/pdf` | 483 ms |
-| `/octet/blob` | 34,824 | `application/pdf` | 47 ms |
-| `/fixture.pdf` | 734 | `application/pdf` | 57 ms |
-| `/p1` to `/p9` | 38 to 80 | `text/html; charset=windows-1252` | 19 to 93 ms |
+| URL | Bytes | Detected | Lane | Elapsed |
+| --- | ---: | --- | --- | ---: |
+| `/big` | 3,145,728 | `text/html; charset=windows-1252` | spool | 6,882 ms |
+| `/docs/testPDF_childAttachments.pdf` | 2,318,262 | `application/pdf` | spool | 3,326 ms |
+| `/docs/testPDF_protected.pdf` | 506,064 | `application/pdf` | inline | 378 ms |
+| `/docs/testPDF.pdf` | 34,824 | `application/pdf` | inline | 356 ms |
+| `/octet/blob` | 34,824 | `application/pdf` | inline | 34 ms |
+| `/fixture.pdf` | 734 | `application/pdf` | inline | 47 ms |
+| `/p1` to `/p9` | 38 to 80 | `text/html; charset=windows-1252` | inline | 17 to 24 ms |
 
-The seven seconds are the first call of the run, when tika-grpc forks its pipes JVM and the
-parsers initialize; the same PDF bytes a few seconds later, as `/octet/blob`, take 47 ms.
-Two unexpected results from this run are noted in
-[`evidence/released-stack/`](evidence/released-stack/).
+The seven seconds on `/big` are the first call of the run, when tika-grpc forks its pipes JVM
+and the parsers initialize; the 2.3 MB PDF through the spool takes 3.3 s, the same 34 KB PDF
+bytes served as `/octet/blob` take 34 ms. Two unexpected results
+from this run are noted in [`evidence/released-stack/`](evidence/released-stack/).
 
 ## Trying another ParseBytes server
 
