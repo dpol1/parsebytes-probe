@@ -1,4 +1,4 @@
-probe_sha=a4b61fce35b03bb222ad47c3d5bae3395bcf116a
+demo_sha=1118b28e50b6643a13e6ccbb1b39a6ec10043e89
 tika_server_sha=a060ac5d35483b9f5f684b6c356332474494e2f8
 tika_server_uncommitted_patch_sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 tika_port=50052
@@ -11,7 +11,7 @@ protoc=3.25.8 protoc-gen-grpc-java=1.76.0 (runtime: protobuf-java 3.25.8, grpc 1
 sha256 8a233ef9aa03acee1d6a19ad7db26b8068416d1268b59add4592f6fe3cdb9449  proto/org/apache/tika/grpc/v2/document.proto
 sha256 ad0cfb978d9fb393ac18724be8aacac30f8c4682f9d755a97f2fc02904976724  proto/org/apache/tika/grpc/v2/tika_v2.proto
 sha256 991be91bc0bc09126cbf43ed37358913f48ec90323c2baf0daf41026e251ae01  tika/config.template.json
-sha256 49543c0c5b559ce0ce068e8b1dd3507f5a3b162f3b2767b347770b1f8a25c9b3  testserver/server.py
+sha256 77b65708f7041c7246ff39b3ba8f72926ce758e9bcc1fa949446d2b4456ea9b9  testserver/server.py
 sha256 e3dab9aca375c152075cfc3ce764f60ec74823a51d8bf7cf134f515d0365851d  testserver/fixture.pdf
 sha256 9396d203b78cc367d8879c867f45de0f8ea16e15ecd5831e570240aba081083e  testserver/docs/testPDF_childAttachments.pdf
 sha256 8035bc3f748d8b97b8a9978bd812197bf40cf2b294a7e9b30e39d7167ddc720e  testserver/docs/testPDF.pdf
