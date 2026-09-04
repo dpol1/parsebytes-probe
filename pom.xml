@@ -5,12 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.example</groupId>
-    <artifactId>parsebytes-probe</artifactId>
+    <artifactId>tika-demo</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <!-- Versions are properties so run.sh can override them from the command line
-         (-Dstormcrawler.version=... -Dstorm.version=...) without editing this file. -->
+    <!-- run.sh overrides these with -Dstormcrawler.version=... -Dstorm.version=... -->
     <properties>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -27,10 +26,8 @@
         <dependency>
             <groupId>org.apache.stormcrawler</groupId>
             <artifactId>stormcrawler-urlfrontier</artifactId>
-            <!-- The spout and the status updater. Also why grpc-netty-shaded, grpc-stub,
-                 grpc-protobuf and protobuf-java 3.25.x are on the classpath: the generated
-                 stubs use those and nothing else. Swap the frontier for another spout and
-                 you have to add them explicitly. -->
+            <!-- Spout and status updater. Also brings grpc and protobuf-java 3.25.x, which
+                 the generated Tika stubs use. -->
             <version>${stormcrawler.version}</version>
         </dependency>
         <dependency>
@@ -47,7 +44,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>e2e.ProbeTopology</mainClass>
+                    <mainClass>e2e.CrawlTopology</mainClass>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,9 +1,9 @@
-# StormCrawler config for the probe. crawler-default.yaml from the stormcrawler-core jar is
-# loaded first; only the keys below override it.
+# StormCrawler config. crawler-default.yaml from the stormcrawler-core jar is loaded first;
+# the keys below override it.
 config:
-  http.agent.name: "parsebytes-probe"
+  http.agent.name: "tika-demo"
   http.agent.version: "1.0"
-  http.agent.description: "ParseBytes probe, local run against a fixture server"
+  http.agent.description: "Tika demo, local run against a test web server"
   http.agent.url: "http://localhost/"
   http.agent.email: "test@localhost"
 
@@ -11,20 +11,15 @@ config:
   urlfrontier.port: 7072
   partition.url.mode: "byHost"
 
-  # Everything is on one host, so tuples wait in the fetcher's queue behind the politeness
-  # delay. With Storm's default 30 s timeout the spout would replay the ones still waiting,
-  # the fixture server would see a second GET, and "single acquisition" would fail for the
-  # wrong reason. The frontier's lease on a handed-out URL follows this value too (the spout
-  # defaults urlfrontier.delay.requestable to it), which is what we want: one hand-out per run.
+  # All URLs are on one host and wait in the fetcher's queue behind the politeness delay;
+  # the timeout covers the whole run so no tuple is replayed and re-fetched.
   topology.max.spout.pending: 10
   topology.message.timeout.secs: 300
 
-  # /big is served larger than this, every other fixture is smaller: FetcherBolt cuts that
-  # one page and flags protocol.http.trimmed. The bolt forwards the flag, the server echoes
-  # it as origin.truncated, verify.py checks the round trip. Bytes.
+  # Maximum bytes fetched per document. /big is served larger than this, everything else is
+  # smaller.
   http.content.limit: 3145728
 
-  # Where the probe sends the bytes and where it writes its lines. Change parsebytes.target to
-  # try another ParseBytes implementation, then run with SKIP_TIKA=1.
+  # Where ParseBytesBolt sends the bytes and where it writes its result lines.
   # parsebytes.target: "localhost:50052"
   # parsebytes.results: "out/results.jsonl"

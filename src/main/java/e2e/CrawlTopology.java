@@ -30,15 +30,14 @@ import org.apache.stormcrawler.urlfrontier.StatusUpdaterBolt;
 import org.yaml.snakeyaml.Yaml;
 
 /**
- * The smallest topology that makes the probe meaningful. URLFrontier spout, URL partitioner,
- * FetcherBolt, then the fetched tuple goes to two bolts at once: JSoupParserBolt, StormCrawler's
- * usual HTML parser, so links get discovered and this behaves like a crawl; and ParseBytesBolt,
- * the probe. The status updater sends discovered links back to the frontier. Runs in a
- * LocalCluster for a fixed number of minutes, then exits.
+ * URLFrontier spout, URL partitioner, FetcherBolt, then each fetched tuple goes to two bolts:
+ * JSoupParserBolt, which discovers links, and ParseBytesBolt, which sends the bytes to Tika.
+ * The status updater sends discovered links back to the frontier. Runs in a LocalCluster for
+ * a fixed number of minutes, then exits.
  *
- * <p>Usage: {@code ProbeTopology [minutes] [seeds file] [crawler conf]}
+ * <p>Usage: {@code CrawlTopology [minutes] [seeds file] [crawler conf]}
  */
-public class ProbeTopology {
+public class CrawlTopology {
 
     public static void main(String[] args) throws Exception {
         int runMinutes = args.length > 0 ? Integer.parseInt(args[0]) : 2;
@@ -46,7 +45,7 @@ public class ProbeTopology {
         String crawlerConf = args.length > 2 ? args[2] : "crawler-conf.yaml";
 
         Config conf = new Config();
-        // StormCrawler's defaults first (from the stormcrawler-core jar), then our overrides.
+        // StormCrawler's defaults, then the overrides from the crawler config file.
         conf.putAll(loadConfigSection("/crawler-default.yaml", true));
         conf.putAll(loadConfigSection(crawlerConf, false));
 
@@ -57,7 +56,6 @@ public class ProbeTopology {
         builder.setBolt("partitioner", new URLPartitionerBolt(), 1).shuffleGrouping("spout");
         builder.setBolt("fetcher", new FetcherBolt(), 1)
                 .fieldsGrouping("partitioner", new Fields("key"));
-        // Two subscribers on the fetcher's default stream: Storm hands the tuple to both.
         builder.setBolt("parse", new JSoupParserBolt(), 1).localOrShuffleGrouping("fetcher");
         builder.setBolt("parsebytes", new ParseBytesBolt(), 1).localOrShuffleGrouping("fetcher");
         builder.setBolt("index", new StdOutIndexer(), 1).localOrShuffleGrouping("parse");
@@ -67,12 +65,11 @@ public class ProbeTopology {
                 .fieldsGrouping("index", "status", new Fields("url"));
 
         try (LocalCluster cluster = new LocalCluster()) {
-            cluster.submitTopology("parsebytes-probe", conf, builder.createTopology());
+            cluster.submitTopology("tika-demo", conf, builder.createTopology());
             System.out.println(">>> topology running for " + runMinutes + " minutes");
             Thread.sleep(runMinutes * 60_000L);
             System.out.println(">>> run window elapsed, shutting down");
         }
-        // LocalCluster leaves non-daemon threads behind; exit explicitly.
         System.exit(0);
     }
 
@@ -81,7 +78,7 @@ public class ProbeTopology {
             throws Exception {
         try (InputStream is =
                 classpath
-                        ? ProbeTopology.class.getResourceAsStream(path)
+                        ? CrawlTopology.class.getResourceAsStream(path)
                         : new FileInputStream(path)) {
             Map<String, Object> raw = new Yaml().load(is);
             Object section = raw.get("config");
@@ -89,7 +86,7 @@ public class ProbeTopology {
         }
     }
 
-    /** Puts the seed URLs into URLFrontier, the way an injector topology would. */
+    /** Puts the seed URLs into URLFrontier. */
     private static void injectSeeds(List<String> seedUrls) throws Exception {
         ManagedChannel channel =
                 ManagedChannelBuilder.forTarget("localhost:7072").usePlaintext().build();
@@ -136,5 +133,5 @@ public class ProbeTopology {
         }
     }
 
-    private ProbeTopology() {}
+    private CrawlTopology() {}
 }

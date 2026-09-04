@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
-"""Fixture HTTP server for the probe. Deliberately dumb: a few generated HTML pages, a handful
-of PDFs, and one line per request appended to an access log:
+"""Test web server: a few generated HTML pages, a handful of PDFs, and one line per request
+appended to an access log:
 
     epoch host path status
 
-That log is the only witness of what was fetched that does not belong to the crawler. It is
-how verify.py knows each URL was requested exactly once, and therefore that nothing on the
-Tika side went back to the network.
-
-Routes (any host name; they all resolve to this process):
+Routes, on any host name:
     /robots.txt      allow everything
-    /p<N>            a small HTML page linking to /p<N+1> and /p<N+2>, up to /p9, so the crawl
-                     finds work on its own
+    /p<N>            a small HTML page linking to /p<N+1> and /p<N+2>, up to /p9
     /fixture.pdf     the hand-written 734-byte PDF, as application/pdf
-    /docs/<file>     a file from testserver/docs/ with its real content type
-    /octet/blob      the bytes of docs/testPDF.pdf with no extension and declared as
-                     application/octet-stream: neither header nor name says PDF
-    /big             a 4 MiB generated page, above the crawl's http.content.limit, so
-                     FetcherBolt cuts it and sets the truncation flag
+    /docs/<file>     a file from testserver/docs/, as application/pdf
+    /octet/blob      the bytes of docs/testPDF.pdf, no extension, as application/octet-stream
+    /big             a generated 4 MiB HTML page
 
 Usage: server.py [access.log] [port] [bind address]
 """
@@ -35,8 +28,6 @@ DOCS_DIR = os.path.join(HERE, "docs")
 with open(os.path.join(HERE, "fixture.pdf"), "rb") as fh:
     FIXTURE_PDF = fh.read()
 logfile = open(LOG_PATH, "a", buffering=1)
-# Deterministic, so its hash is stable across runs; the crawl only ever sees its first
-# http.content.limit bytes.
 BIG_HTML = b"<html><body><h1>/big</h1>" + b"0123456789abcdef" * (4 * 1024 * 1024 // 16) + b"</body></html>"
 
 
@@ -55,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def log_message(self, *args):
-        pass  # the access log below is the one we want, in a format verify.py can parse
+        pass  # the access log below replaces the default request log
 
     def do_GET(self):
         host = (self.headers.get("Host") or "").split(":")[0]

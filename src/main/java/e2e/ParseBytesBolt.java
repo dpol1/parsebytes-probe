@@ -27,24 +27,16 @@ import org.apache.tika.grpc.v2.ParseBytesRequest;
 import org.apache.tika.grpc.v2.TikaV2Grpc;
 
 /**
- * Takes the tuple FetcherBolt emitted (url, content, metadata), sends the content to
- * TikaV2.ParseBytes as it is, and writes one JSON line per tuple for verify.py.
- *
- * <p>This is a probe, not a production bolt. It acks every tuple, records failures in the line
- * instead of failing the tuple, and emits nothing downstream. Whether a remote parse failure
- * should fail the tuple, retry, or go to the status stream is a decision for StormCrawler's
- * design, and this class stays out of it.
- *
- * <p>This class calls no Tika runtime APIs: its only Tika-related dependency is the generated
- * org.apache.tika.grpc.v2 stubs (StormCrawler itself ships tika-core transitively; the probe
- * never touches it). The same class works against any server that implements the service.
+ * Sends the content of each tuple FetcherBolt emitted (url, content, metadata) to
+ * TikaV2.ParseBytes and writes one JSON line per tuple with what came back. Acks every tuple,
+ * records failures in the line, emits nothing downstream. Depends only on the generated
+ * org.apache.tika.grpc.v2 stubs.
  */
 public class ParseBytesBolt extends BaseRichBolt {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
-    // Storm serializes the bolt to ship it to workers (in local mode too), so anything that is
-    // not Serializable gets created in prepare().
+    // Storm serializes the bolt; the non-serializable parts are created in prepare().
     private transient OutputCollector collector;
     private transient ManagedChannel channel;
     private transient TikaV2Grpc.TikaV2BlockingStub stub;
@@ -58,7 +50,7 @@ public class ParseBytesBolt extends BaseRichBolt {
         channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
         stub = TikaV2Grpc.newBlockingStub(channel);
         try {
-            // Append and flush per line, so a crash keeps what already happened.
+            // Append, flush per line.
             out = new PrintWriter(new FileWriter(results, true), true);
         } catch (IOException e) {
             throw new IllegalStateException("cannot open " + results, e);
@@ -75,21 +67,13 @@ public class ParseBytesBolt extends BaseRichBolt {
         try {
             ParseBytesRequest request =
                     ParseBytesRequest.newBuilder()
-                            // Deliberately not the URL itself: verify.py must be able to
-                            // tell an echoed correlation id from an id copied out of the
-                            // provenance below.
                             .setCorrelationId("crawl:" + url)
                             .setContent(ByteString.copyFrom(content))
                             .setResourceName(resourceName(url))
-                            // Provenance only. The contract says the server never dereferences
-                            // it; verify.py checks that by counting GETs on the fixture server.
                             .setSourceUri(url)
-                            // StormCrawler flags bodies it cut at http.content.limit in the
-                            // protocol metadata; "protocol." is the default protocol.md.prefix.
+                            // set by StormCrawler when the body was cut at http.content.limit
                             .setTruncated("true".equals(metadata.getFirstValue("protocol.http.trimmed")))
                             .build();
-            // Fail-safe deadline: a stuck server must not pin the bolt. The tuple is acked
-            // either way (this probe never retries), so the deadline only bounds the wait.
             ParseBytesReply reply =
                     stub.withDeadlineAfter(30, TimeUnit.SECONDS).parseBytes(request);
             Document doc = reply.getDocument();
@@ -111,10 +95,7 @@ public class ParseBytesBolt extends BaseRichBolt {
                     .put("pipes_status", doc.getStatus().getPipesStatus())
                     .put("tika_version", doc.getStatus().getTikaVersion())
                     .put("extra_fields", doc.getExtraCount())
-                    // Wire size of the typed reply, to compare with the input bytes.
                     .put("document_bytes", doc.getSerializedSize())
-                    // What the crawler said and what came back in origin: verify.py checks
-                    // they agree, and that /big is the one page flagged.
                     .put("truncated_sent", request.getTruncated())
                     .put("truncated", doc.getOrigin().getTruncated());
         } catch (StatusRuntimeException e) {
@@ -130,7 +111,7 @@ public class ParseBytesBolt extends BaseRichBolt {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // Terminal bolt: nothing goes downstream.
+        // nothing goes downstream
     }
 
     @Override
